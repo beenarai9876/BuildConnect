@@ -43,29 +43,43 @@ export default function ProjectDetail() {
       if (projectError) throw projectError
       setProject(projectData)
 
+      // Fetch bids with contractor details
       const { data: bidsData, error: bidsError } = await supabase
         .from('bids')
-        .select(`
-          *,
-          contractor:contractor_id (
-            user_id,
-            specializations,
-            experience_years,
-            team_size,
-            rating,
-            total_projects,
-            profiles:user_id (
-              full_name,
-              company_name,
-              phone
-            )
-          )
-        `)
+        .select('*')
         .eq('project_id', params.id)
         .order('created_at', { ascending: false })
 
       if (bidsError) throw bidsError
-      setBids(bidsData || [])
+
+      // Fetch contractor details for each bid separately
+      const bidsWithContractors = await Promise.all(
+        (bidsData || []).map(async (bid) => {
+          // Get contractor profile
+          const { data: contractorProfile } = await supabase
+            .from('profiles')
+            .select('full_name, company_name, phone')
+            .eq('id', bid.contractor_id)
+            .single()
+
+          // Get contractor data
+          const { data: contractorData } = await supabase
+            .from('contractors')
+            .select('specializations, experience_years, team_size, rating, total_projects')
+            .eq('user_id', bid.contractor_id)
+            .single()
+
+          return {
+            ...bid,
+            contractor: {
+              ...contractorData,
+              profiles: contractorProfile
+            }
+          }
+        })
+      )
+
+      setBids(bidsWithContractors)
     } catch (error) {
       console.error('Error fetching project:', error)
     } finally {
