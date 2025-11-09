@@ -30,19 +30,43 @@ export default function SignInForm() {
 
       if (error) throw error
 
-      // Redirect based on role
-      const userType = data.user.user_metadata?.user_type
-      if (userType === 'builder') {
-        router.push('/builder/dashboard')
-      } else if (userType === 'contractor') {
-        router.push('/contractor/dashboard')
-      } else {
-        router.push('/')
+      console.log('Login successful:', data.user)
+      console.log('User metadata:', data.user.user_metadata)
+
+      // First try to get user type from metadata
+      let userType = data.user.user_metadata?.user_type
+
+      // If metadata doesn't have user_type, fetch from profiles table
+      if (!userType) {
+        console.log('User type not in metadata, fetching from profile...')
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('user_type')
+          .eq('id', data.user.id)
+          .single()
+
+        if (profileError) {
+          console.error('Error fetching profile:', profileError)
+          throw new Error('Could not determine user type. Please contact support.')
+        }
+
+        userType = profileData?.user_type
+        console.log('User type from profile:', userType)
       }
-      router.refresh()
+
+      // Redirect based on role
+      console.log('Redirecting to:', userType === 'builder' ? '/builder/dashboard' : '/contractor/dashboard')
+
+      if (userType === 'builder') {
+        window.location.href = '/builder/dashboard'
+      } else if (userType === 'contractor') {
+        window.location.href = '/contractor/dashboard'
+      } else {
+        window.location.href = '/'
+      }
     } catch (error) {
+      console.error('Login error:', error)
       setError(error.message || 'An error occurred during sign in')
-    } finally {
       setLoading(false)
     }
   }

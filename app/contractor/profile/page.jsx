@@ -53,7 +53,7 @@ export default function ContractorProfile() {
         .eq('id', user.id)
         .single()
 
-      // Fetch contractor data
+      // Fetch contractor data with ratings
       const { data: contractorDataRes } = await supabase
         .from('contractors')
         .select('*')
@@ -61,6 +61,17 @@ export default function ContractorProfile() {
         .single()
 
       setContractorData(contractorDataRes)
+
+      // Also fetch from contractor_stats view for ratings
+      const { data: statsData } = await supabase
+        .from('contractor_stats')
+        .select('*')
+        .eq('user_id', user.id)
+        .single()
+
+      if (statsData) {
+        setContractorData(prev => ({ ...prev, ...statsData }))
+      }
 
       // Fetch won bids
       const { data: bidsData } = await supabase
@@ -166,33 +177,41 @@ export default function ContractorProfile() {
 
   return (
     <DashboardLayout role="contractor">
-      <div className="max-w-4xl mx-auto space-y-6">
+      <div className="max-w-4xl mx-auto space-y-6 animate-fade-in">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">My Profile</h1>
           <p className="text-gray-600 mt-1">Manage your professional information</p>
         </div>
 
         {/* Stats Overview */}
-        <div className="grid md:grid-cols-3 gap-6">
-          <Card>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 stagger-animation">
+          <Card className="card-hover">
             <CardContent className="p-6 text-center">
               <Star className="h-8 w-8 mx-auto mb-2 text-yellow-500 fill-yellow-500" />
-              <div className="text-2xl font-bold">{contractorData?.rating?.toFixed(1) || '0.0'}</div>
-              <p className="text-sm text-gray-600">Average Rating</p>
+              <div className="text-3xl font-bold text-yellow-600">{contractorData?.average_rating?.toFixed(1) || '0.0'}</div>
+              <p className="text-sm text-gray-600 mt-1">Average Rating</p>
+              <p className="text-xs text-gray-500 mt-1">{contractorData?.total_ratings || 0} reviews</p>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="card-hover">
             <CardContent className="p-6 text-center">
               <Trophy className="h-8 w-8 mx-auto mb-2 text-green-500" />
-              <div className="text-2xl font-bold">{contractorData?.total_projects || 0}</div>
-              <p className="text-sm text-gray-600">Projects Completed</p>
+              <div className="text-3xl font-bold text-green-600">{contractorData?.total_projects_completed || 0}</div>
+              <p className="text-sm text-gray-600 mt-1">Completed Projects</p>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="card-hover">
             <CardContent className="p-6 text-center">
               <Briefcase className="h-8 w-8 mx-auto mb-2 text-blue-500" />
-              <div className="text-2xl font-bold">{wonBids.length}</div>
-              <p className="text-sm text-gray-600">Bids Won</p>
+              <div className="text-3xl font-bold text-blue-600">{wonBids.length}</div>
+              <p className="text-sm text-gray-600 mt-1">Bids Won</p>
+            </CardContent>
+          </Card>
+          <Card className="card-hover">
+            <CardContent className="p-6 text-center">
+              <Star className="h-8 w-8 mx-auto mb-2 text-purple-500" />
+              <div className="text-3xl font-bold text-purple-600">{contractorData?.experience_years || 0}</div>
+              <p className="text-sm text-gray-600 mt-1">Years Experience</p>
             </CardContent>
           </Card>
         </div>

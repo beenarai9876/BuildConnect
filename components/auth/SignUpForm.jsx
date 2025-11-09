@@ -63,40 +63,8 @@ export default function SignUpForm() {
 
       if (error) throw error
 
-      // Create profile in profiles table
-      if (data.user) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert([
-            {
-              id: data.user.id,
-              email: formData.email,
-              full_name: formData.fullName,
-              phone: formData.phone,
-              company_name: formData.companyName,
-              user_type: formData.userType,
-            },
-          ])
-
-        if (profileError) throw profileError
-
-        // Create contractor profile if contractor
-        if (formData.userType === 'contractor') {
-          const { error: contractorError } = await supabase
-            .from('contractors')
-            .insert([
-              {
-                user_id: data.user.id,
-                specializations: [],
-                service_locations: [],
-                team_size: 0,
-                experience_years: 0,
-              },
-            ])
-
-          if (contractorError) throw contractorError
-        }
-      }
+      // Profile and contractor records are created automatically by database trigger
+      // No need to manually insert into profiles or contractors tables
 
       alert('Account created successfully! You can now log in.')
       router.push('/login')

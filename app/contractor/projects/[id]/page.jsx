@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
-import { ArrowLeft, MapPin, Calendar, DollarSign, Clock, Send, Loader2 } from 'lucide-react'
+import { ArrowLeft, MapPin, Calendar, DollarSign, Clock, Send, Loader2, User, Building2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useUser } from '@/context/UserContext'
 import Link from 'next/link'
@@ -21,6 +21,7 @@ export default function ContractorProjectDetail() {
   const router = useRouter()
   const supabase = createClient()
   const [project, setProject] = useState(null)
+  const [builder, setBuilder] = useState(null)
   const [existingBid, setExistingBid] = useState(null)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
@@ -48,6 +49,15 @@ export default function ContractorProjectDetail() {
 
       if (projectError) throw projectError
       setProject(projectData)
+
+      // Fetch builder profile info
+      const { data: builderData } = await supabase
+        .from('profiles')
+        .select('id, full_name, company_name, email, phone')
+        .eq('id', projectData.builder_id)
+        .single()
+
+      setBuilder(builderData)
 
       // Check if user already has a bid
       const { data: bidData, error: bidError } = await supabase
@@ -268,8 +278,43 @@ export default function ContractorProjectDetail() {
             </Card>
           </div>
 
-          {/* Bid Form */}
-          <div>
+          {/* Sidebar */}
+          <div className="space-y-4">
+            {/* Builder Info */}
+            {builder && (
+              <Card className="animate-fade-in">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <Building2 className="h-5 w-5 text-purple-600" />
+                    Posted By
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Link
+                    href={`/profile/builder/${builder.id}`}
+                    className="block hover:bg-gray-50 p-3 rounded-lg transition-all duration-200 hover:scale-105"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center text-purple-700 font-bold text-lg flex-shrink-0">
+                        {builder.company_name?.[0] || builder.full_name?.[0] || 'B'}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-purple-600 hover:text-purple-700 hover:underline transition-colors">
+                          {builder.company_name || builder.full_name}
+                        </h3>
+                        <p className="text-sm text-gray-600 truncate">{builder.full_name}</p>
+                        <div className="mt-2 flex items-center gap-2 text-xs text-gray-500">
+                          <User className="h-3 w-3" />
+                          <span>View Profile →</span>
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Bid Form */}
             <Card className="sticky top-20">
               <CardHeader>
                 <CardTitle>
